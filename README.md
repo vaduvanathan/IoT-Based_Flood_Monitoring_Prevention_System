@@ -49,5 +49,5 @@ This repository contains extensive documentation detailing the design, implement
 
 ## Contact
 
-* **Vaduvanthan P.**
+* **Vaduvanathan P.**
 * **Email:** praveenvaduvanathan@gmail.com
