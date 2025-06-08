@@ -1,0 +1,121 @@
+// src/main.ino
+
+/*************************************************************
+ * IoT-Based Flood Monitoring Prevention System
+ * Code for ESP32 with Dual Ultrasonic Sensors and Blynk
+ *
+ * This sketch demonstrates connecting ESP32 to Wi-Fi and Blynk,
+ * simulating readings from two ultrasonic sensors, and sending
+ * these readings to Blynk for real-time monitoring.
+ *
+ * REPLACE SIMULATED SENSOR LOGIC WITH YOUR ACTUAL SENSOR CODE!
+ * REPLACE Blynk and Wi-Fi credentials with your own.
+ *************************************************************/
+
+// --- Include necessary libraries ---
+#include <WiFi.h>          // For ESP32 Wi-Fi connectivity
+#include <WiFiClient.h>    // For Wi-Fi client
+#include <BlynkSimpleEsp32.h> // For Blynk library specifically for ESP32
+
+// --- Blynk Configuration ---
+// Get these from your Blynk IoT dashboard:
+#define BLYNK_TEMPLATE_ID   "YOUR_BLYNK_TEMPLATE_ID" // e.g., "TMPLxxxxxxxxx"
+#define BLYNK_DEVICE_NAME   "YourFloodMonitor"     // e.g., "SubwayFloodMonitor"
+#define BLYNK_AUTH_TOKEN    "YOUR_BLYNK_AUTH_TOKEN" // e.g., "xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+// --- Wi-Fi Credentials ---
+char ssid[] = "YOUR_WIFI_SSID";     // Your Wi-Fi network SSID (name)
+char pass[] = "YOUR_WIFI_PASSWORD"; // Your Wi-Fi network password
+
+// --- Virtual Pins for Blynk (Define these in your Blynk Template) ---
+#define VIRTUAL_PIN_SENSOR1 V0 // Virtual Pin for Ultrasonic Sensor 1 data
+#define VIRTUAL_PIN_SENSOR2 V1 // Virtual Pin for Ultrasonic Sensor 2 data
+
+// --- Sensor Thresholds (Adjust these based on your application) ---
+// These values represent distances. Lower distance means higher water level.
+const int SENSOR1_CRITICAL_DISTANCE_CM = 10; // e.g., if water is within 10 cm of sensor 1, it's critical
+const int SENSOR2_CRITICAL_DISTANCE_CM = 15; // e.g., if water is within 15 cm of sensor 2, it's critical
+
+// --- Timer for sending data to Blynk ---
+BlynkTimer timer;
+
+// --- Function to simulate ultrasonic sensor readings ---
+// REPLACE THIS FUNCTION WITH YOUR ACTUAL ULTRASONIC SENSOR INTERFACING CODE
+// This simulation generates random distances.
+float simulateUltrasonicReadings(int sensorId) {
+  // Simulate distance in cm.
+  // In a real scenario, you'd use Trigger and Echo pins with pulseIn()
+  // Example for HC-SR04:
+  // digitalWrite(TRIG_PIN, LOW);
+  // delayMicroseconds(2);
+  // digitalWrite(TRIG_PIN, HIGH);
+  // delayMicroseconds(10);
+  // digitalWrite(TRIG_PIN, LOW);
+  // duration = pulseIn(ECHO_PIN, HIGH);
+  // distance = (duration * 0.0343) / 2; // Speed of sound in cm/microsecond
+
+  float simulatedDistance;
+  if (sensorId == 1) {
+    // Simulating sensor 1, more likely to show normal distances
+    simulatedDistance = random(5, 200); // Distance between 5cm and 200cm
+  } else {
+    // Simulating sensor 2, might show more varied distances
+    simulatedDistance = random(10, 250); // Distance between 10cm and 250cm
+  }
+  return simulatedDistance;
+}
+
+// --- Function to send sensor data to Blynk ---
+void sendSensorData() {
+  // Read simulated sensor data
+  float distance1_cm = simulateUltrasonicReadings(1);
+  float distance2_cm = simulateUltrasonicReadings(2);
+
+  // Print to Serial Monitor for debugging
+  Serial.print("Sensor 1 Distance: ");
+  Serial.print(distance1_cm);
+  Serial.println(" cm");
+
+  Serial.print("Sensor 2 Distance: ");
+  Serial.print(distance2_cm);
+  Serial.println(" cm");
+
+  // Send data to Blynk Virtual Pins
+  Blynk.virtualWrite(VIRTUAL_PIN_SENSOR1, distance1_cm);
+  Blynk.virtualWrite(VIRTUAL_PIN_SENSOR2, distance2_cm);
+
+  // Basic threshold check and serial print for alerting
+  if (distance1_cm <= SENSOR1_CRITICAL_DISTANCE_CM) {
+    Serial.println("!!! ALERT: Sensor 1 indicates CRITICAL WATER LEVEL !!!");
+    // In a real system, you might trigger a Blynk notification here:
+    // Blynk.notify("Critical water level at Sensor 1!");
+  }
+  if (distance2_cm <= SENSOR2_CRITICAL_DISTANCE_CM) {
+    Serial.println("!!! ALERT: Sensor 2 indicates CRITICAL WATER LEVEL !!!");
+    // Blynk.notify("Critical water level at Sensor 2!");
+  }
+  Serial.println("---");
+}
+
+// --- Setup function: Runs once when ESP32 starts ---
+void setup() {
+  Serial.begin(115200); // Initialize serial communication for debugging
+
+  // Initialize random seed (good practice for random numbers)
+  randomSeed(analogRead(0));
+
+  // Connect to Blynk using Wi-Fi
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+
+  // Set up timer to call sendSensorData() every 5 seconds (5000 milliseconds)
+  timer.setInterval(5000L, sendSensorData);
+
+  Serial.println("ESP32 Flood Monitoring System booting up...");
+  Serial.println("Connecting to Wi-Fi and Blynk...");
+}
+
+// --- Loop function: Runs repeatedly after setup ---
+void loop() {
+  Blynk.run(); // This handles all Blynk connectivity and communication
+  timer.run(); // This runs the timer to send data periodically
+}
